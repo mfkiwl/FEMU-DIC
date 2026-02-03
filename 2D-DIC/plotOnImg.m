@@ -24,8 +24,8 @@ switch varible
         plot_variable = strain(:,3);
 end
 
-indx_nan = find(plot_variable == -1);
-indx_not_nan = find(plot_variable ~= -1);
+indx_nan = find(plot_variable == -1 | isnan(plot_variable));
+indx_not_nan = find(plot_variable ~= -1 & ~isnan(plot_variable));
 
 plot_variable(indx_nan) = nan;
 variable_sort = sort(plot_variable(indx_not_nan));
@@ -33,7 +33,7 @@ plot_variable(find(plot_variable<variable_sort(ceil(1/100*length(variable_sort))
 plot_variable(find(plot_variable>variable_sort(floor(99/100*length(variable_sort(:))))))= variable_sort(floor(99/100*length(variable_sort(:))));
 plot_variable(find(abs(plot_variable)<1e-10)) = 0;
 
-surf(y,x,reshape(plot_variable,Params.Lx,Params.Ly),'FaceColor','flat','FaceAlpha',0.5,'EdgeAlpha',0.5,'EdgeColor','none');
+surf(y,x,ones(size(x)),reshape(plot_variable,Params.Lx,Params.Ly),'FaceColor','flat','FaceAlpha',0.5,'EdgeAlpha',0.5,'EdgeColor','none');
 shading interp;
 
 %% new colorbar
