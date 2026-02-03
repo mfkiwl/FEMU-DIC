@@ -57,8 +57,8 @@ for i = 1 : ROIsize(1)
                 % B((j-1)*ROIsize(1)+i,3) = sum(sum(GS_filter_y.*vWin));
 
             else
-                xVec            = max(1,i-halfWsize) : min(ROIsize(1),i+halfWsize);
-                yVec            = max(1,j-halfWsize) : min(ROIsize(2),j+halfWsize);
+                xVec            = max(1,i-halfWsize(1)) : min(ROIsize(1),i+halfWsize(1));
+                yVec            = max(1,j-halfWsize(2)) : min(ROIsize(2),j+halfWsize(2));
 
                 if length(xVec)<=2 || length(yVec)<=2
                     continue;
