@@ -17,9 +17,9 @@ X             = Params.comptPoints;
 ROIsize       = [Params.Lx,Params.Ly];
 switch order
     case 1
-        A             = NaN(prod(ROIsize),3);
+    A             = NaN(prod(ROIsize),3);
     case 2
-        A             = NaN(prod(ROIsize),6);
+    A             = NaN(prod(ROIsize),6);  
 end
 
 B             = A;
@@ -32,65 +32,71 @@ GS_filter_x = 3/((strainWinSize(1))^2*(halfWsize(1)+1)*halfWsize(1)*Params.Step)
     repmat([-halfWsize(1):halfWsize(1)]',1,strainWinSize(1));
 
 GS_filter_y = GS_filter_x';
+% GS_filter_x = GS_filter_x(:);
+% GS_filter_y = GS_filter_y(:);
+% ux = filter2(GS_filter_x,u,'same');
+% uy = filter2(GS_filter_y,u,'same');
+% vx = filter2(GS_filter_x,v,'same');
+% vy = filter2(GS_filter_y,v,'same');
+% surf(ux),shading interp,axis tight, axis equal, view([0,90]);
+% 
+% exx = ux(:);
+% eyy = vy(:);
+% exy  = (uy(:)+vx(:))/2;
+% strain0 = [exx,eyy,exy];
 
-ux = imfilter(u,GS_filter_x);
-uy = imfilter(u,GS_filter_y);
-vx = imfilter(v,GS_filter_x);
-vy = imfilter(v,GS_filter_y);
-A(:,2) = ux(:);
-A(:,3) = uy(:);
-B(:,2) = vx(:);
-B(:,3) = vy(:);
+% tic
+[xWin,yWin]     = ndgrid(Params.Step.*[-halfWsize(1):halfWsize(1)],...
+    Params.Step.*[-halfWsize(1):halfWsize(1)]);
+deltax          = xWin(:);
+deltay          = yWin(:);
+coeff0           = [ones(numel(deltax),1),deltax,deltay]';
+coeffMat0        = (coeff0*coeff0')^-1*coeff0;
 
 for i = 1 : ROIsize(1)
     for j = 1 : ROIsize(2)
         if ~isnan(u(i,j))
+            xVec            = max(1,i-halfWsize(1)) : min(ROIsize(1),i+halfWsize(1));
+            yVec            = max(1,j-halfWsize(2)) : min(ROIsize(2),j+halfWsize(2));
 
+            uWin            = u(xVec,yVec);
+            vWin            = v(xVec,yVec);
             %             wWin            = w(xVec,yVec);
-
-            % indNoNan        = find(~isnan(uWin(:)));
-            if ~isnan(ux(i,j))
-                % if isempty(indNan) && (length(uWin(:)) == prod(strainWinSize))
-                % A((j-1)*ROIsize(1)+i,2) = sum(sum(GS_filter_x.*uWin));
-                % A((j-1)*ROIsize(1)+i,3) = sum(sum(GS_filter_y.*uWin));
-                % B((j-1)*ROIsize(1)+i,2) = sum(sum(GS_filter_x.*vWin));
-                % B((j-1)*ROIsize(1)+i,3) = sum(sum(GS_filter_y.*vWin));
-
+            indNan          = find(isnan(uWin(:)));
+         
+    %         coeff           = [ones(numel(uWin),1),deltax,deltay,deltax.^2,deltax.*deltay,deltay.^2]';
+            if isempty(indNan) && (length(uWin(:)) == size(coeffMat0,2))
+                A((j-1)*ROIsize(1)+i,2) = sum(sum(GS_filter_x.*uWin));
+                A((j-1)*ROIsize(1)+i,3) = sum(sum(GS_filter_y.*uWin));
+                B((j-1)*ROIsize(1)+i,2) = sum(sum(GS_filter_x.*vWin));
+                B((j-1)*ROIsize(1)+i,3) = sum(sum(GS_filter_y.*vWin));
+                
+                
+%                 A((j-1)*ROIsize(1)+i,:) = coeffMat0*uWin(:);
+%                 B((j-1)*ROIsize(1)+i,:) = coeffMat0*vWin(:);
             else
-                xVec            = max(1,i-halfWsize(1)) : min(ROIsize(1),i+halfWsize(1));
-                yVec            = max(1,j-halfWsize(2)) : min(ROIsize(2),j+halfWsize(2));
-
-                if length(xVec)<=2 || length(yVec)<=2
-                    continue;
-                end
-                uWin            = u(xVec,yVec);
-                vWin            = v(xVec,yVec);
-                indNan          = find(isnan(uWin(:)));
-
                 xCen            = x(i,j);
                 yCen            = y(i,j);
-
+                uWin(indNan)    = [];
+                vWin(indNan)    = [];
                 xWin            = x(xVec,yVec);
                 yWin            = y(xVec,yVec);
                 deltax          = xWin(:)-xCen;
                 deltay          = yWin(:)-yCen;
-
-                uWin(indNan)    = [];
-                vWin(indNan)    = [];
+                              
+                
                 deltax(indNan)  = [];
                 deltay(indNan)  = [];
-
                 coeff           = [ones(numel(deltax),1),deltax,deltay]';
-                coeffMat        = (coeff*coeff')\coeff;
-                A((j-1)*ROIsize(1)+i,:) = coeffMat*uWin';
-                B((j-1)*ROIsize(1)+i,:) = coeffMat*vWin';
-
+                coeffMat        = (coeff*coeff')^-1;
+                A((j-1)*ROIsize(1)+i,:) = coeffMat*(coeff*uWin');
+                B((j-1)*ROIsize(1)+i,:) = coeffMat*(coeff*vWin');
+                
             end
         end
     end
 end
-
-
+% toc
 % output the strain
 exx      = A(:,2);
 eyy      = B(:,3);
